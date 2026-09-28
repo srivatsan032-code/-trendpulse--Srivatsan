@@ -1,11 +1,3 @@
-"""
-TrendPulse - Task 1: Fetch Data from the HackerNews API
-
-Fetches the top 500 story IDs, downloads each story's details, assigns each
-story to one of 5 categories using keyword matching on the title, and saves
-up to 25 stories per category to data/trends_YYYYMMDD.json
-"""
-
 import json
 import os
 import re
@@ -14,18 +6,15 @@ from datetime import datetime
 
 import requests
 
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
 TOP_STORIES_URL = "https://hacker-news.firebaseio.com/v0/topstories.json"
 ITEM_URL = "https://hacker-news.firebaseio.com/v0/item/{id}.json"
 HEADERS = {"User-Agent": "TrendPulse/1.0"}
 
-NUM_IDS_TO_FETCH = 500      # how many top story IDs to look at
-MAX_PER_CATEGORY = 25       # up to 25 stories per category (125 total)
-REQUEST_TIMEOUT = 10        # seconds
+NUM_IDS_TO_FETCH = 500    
+MAX_PER_CATEGORY = 25       
+REQUEST_TIMEOUT = 10        
 
-# Category -> keywords (matched case-insensitively against the title)
+
 CATEGORIES = {
     "technology": ["AI", "software", "tech", "code", "computer", "data",
                    "cloud", "API", "GPU", "LLM"],
@@ -40,9 +29,6 @@ CATEGORIES = {
 }
 
 
-# ---------------------------------------------------------------------------
-# Helper functions
-# ---------------------------------------------------------------------------
 def build_patterns():
     """Pre-compile one case-insensitive regex per category.
 
@@ -83,7 +69,7 @@ def fetch_stories(story_ids):
     stories = []
     for i, story_id in enumerate(story_ids, start=1):
         story = fetch_json(ITEM_URL.format(id=story_id))
-        # Skip failed requests, deleted/dead items, and items without a title
+        
         if story and story.get("title") and not story.get("deleted") \
                 and not story.get("dead"):
             stories.append(story)
@@ -99,19 +85,17 @@ def extract_fields(story, category):
         "title": story.get("title"),
         "category": category,
         "score": story.get("score", 0),
-        "num_comments": story.get("descendants", 0),  # missing if no comments
+        "num_comments": story.get("descendants", 0), 
         "author": story.get("by"),
         "collected_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
+
 def main():
     patterns = build_patterns()
 
-    # Step 1: get top story IDs
+    
     print("Fetching top story IDs...")
     story_ids = fetch_top_story_ids()
     if not story_ids:
@@ -119,14 +103,14 @@ def main():
         return
     print(f"Got {len(story_ids)} story IDs.")
 
-    # Step 2: get details for each story
+   
     print("Fetching story details (this may take a minute)...")
     stories = fetch_stories(story_ids)
     print(f"Retrieved {len(stories)} valid stories.")
 
-    # Assign categories. Loop once per category and sleep once per loop.
+    
     collected = []
-    used_ids = set()  # a story is only placed in one category (no duplicates)
+    used_ids = set() 
 
     for category, pattern in patterns.items():
         count = 0
@@ -141,9 +125,9 @@ def main():
                 count += 1
 
         print(f"Category '{category}': {count} stories")
-        time.sleep(2)  # one 2-second pause per category
-
-    # Step 3: save to JSON file
+        time.sleep(2)  
+        
+   
     os.makedirs("data", exist_ok=True)
     filename = f"data/trends_{datetime.now().strftime('%Y%m%d')}.json"
     with open(filename, "w", encoding="utf-8") as f:
