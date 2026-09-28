@@ -1,32 +1,17 @@
-"""
-TrendPulse - Task 1: Fetch Data from API
-------------------------------------------
-Fetches top stories from the HackerNews public API, assigns each story to one
-of 5 categories based on keyword matching in the title, and saves up to
-25 stories per category (125 total) to a timestamped JSON file.
-
-No API key / login required.
-"""
-
 import requests
 import time
 import json
 import os
 from datetime import datetime
 
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-
 TOP_STORIES_URL = "https://hacker-news.firebaseio.com/v0/topstories.json"
 ITEM_URL = "https://hacker-news.firebaseio.com/v0/item/{id}.json"
 HEADERS = {"User-Agent": "TrendPulse/1.0"}
 
-NUM_TOP_IDS_TO_FETCH = 500       # how many top story IDs to pull
-STORIES_PER_CATEGORY = 25        # cap per category
-SLEEP_BETWEEN_CATEGORIES = 2     # seconds, once per category loop
+NUM_TOP_IDS_TO_FETCH = 500       
+STORIES_PER_CATEGORY = 25       
+SLEEP_BETWEEN_CATEGORIES = 2     
 
-# Category -> list of keywords (case-insensitive match against the title)
 CATEGORY_KEYWORDS = {
     "technology": ["AI", "software", "tech", "code", "computer", "data",
                    "cloud", "API", "GPU", "LLM"],
@@ -41,12 +26,8 @@ CATEGORY_KEYWORDS = {
 }
 
 
-# ---------------------------------------------------------------------------
-# Helper functions
-# ---------------------------------------------------------------------------
-
 def get_top_story_ids(limit=NUM_TOP_IDS_TO_FETCH):
-    """Fetch the list of top story IDs from HackerNews. Returns a list of ints."""
+    
     try:
         response = requests.get(TOP_STORIES_URL, headers=HEADERS, timeout=10)
         response.raise_for_status()
@@ -70,8 +51,7 @@ def get_story_details(story_id):
 
 
 def match_category(title, category):
-    """Return True if any of the category's keywords appear in the title
-    (case-insensitive)."""
+    
     if not title:
         return False
     title_lower = title.lower()
@@ -80,7 +60,7 @@ def match_category(title, category):
 
 
 def build_story_record(story, category):
-    """Extract the 7 required fields from a raw HackerNews story object."""
+   
     return {
         "post_id": story.get("id"),
         "title": story.get("title"),
@@ -92,10 +72,6 @@ def build_story_record(story, category):
     }
 
 
-# ---------------------------------------------------------------------------
-# Main pipeline
-# ---------------------------------------------------------------------------
-
 def collect_trends():
     story_ids = get_top_story_ids()
 
@@ -103,24 +79,21 @@ def collect_trends():
         print("No story IDs retrieved. Exiting.")
         return []
 
-    # Cache fetched story details so the same story isn't re-fetched
-    # from the API multiple times while checking it against each category.
+   
     story_cache = {}
 
     all_collected = []
 
-    # Loop over each category. One sleep happens per category loop
-    # (not per individual story fetch).
+    
     for category in CATEGORY_KEYWORDS:
         category_stories = []
 
         for story_id in story_ids:
-            # Stop once we've collected enough stories for this category
+            
             if len(category_stories) >= STORIES_PER_CATEGORY:
                 break
 
-            # Use cached details if we already fetched this story for a
-            # previous category, otherwise fetch it now.
+            
             if story_id in story_cache:
                 story = story_cache[story_id]
             else:
@@ -128,7 +101,7 @@ def collect_trends():
                 story_cache[story_id] = story
 
             if story is None:
-                # Fetch failed - already printed a message, just move on
+               
                 continue
 
             title = story.get("title", "")
@@ -140,7 +113,7 @@ def collect_trends():
         all_collected.extend(category_stories)
         print(f"Category '{category}': collected {len(category_stories)} stories.")
 
-        # One sleep per category loop, as required
+        
         time.sleep(SLEEP_BETWEEN_CATEGORIES)
 
     return all_collected
